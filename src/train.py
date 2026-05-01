@@ -1,8 +1,8 @@
 # src/train.py
 
-from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.linear_model import Ridge
-from sklearn.ensemble import RandomForestRegressor
+from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 import joblib
@@ -21,33 +21,20 @@ def train_model(df):
         ("scaler", StandardScaler()),
         ("model", Ridge(alpha=1.0))
     ])
-
     ridge_pipeline.fit(X_train, y_train)
 
-    # 🔥 NEW: Grid Search for Random Forest
-    param_grid = {
-        "n_estimators": [100, 200],
-        "max_depth": [None, 10, 20],
-        "min_samples_split": [2, 5]
-    }
-
-    grid = GridSearchCV(
-        RandomForestRegressor(random_state=42),
-        param_grid,
-        cv=3,
-        scoring="r2",
+    # 🔹 Random Forest (OPTIMIZED FOR SIZE + PERFORMANCE)
+    rf_model = RandomForestRegressor(
+        n_estimators=50,       # 🔥 reduced from 200
+        max_depth=8,           # 🔥 reduced depth
+        min_samples_split=10,  # 🔥 prevents over-complex trees
+        random_state=42,
         n_jobs=-1
     )
 
-    grid.fit(X_train, y_train)
-        
+    rf_model.fit(X_train, y_train)
 
-    # 🔥 Get best model
-    rf_model = grid.best_estimator_
-
-    # 🔥 ADD THIS BLOCK HERE
-    from sklearn.model_selection import cross_val_score
-
+    # 🔹 Cross-validation (for RF)
     cv_scores = cross_val_score(
         rf_model,
         X_train,
@@ -59,11 +46,19 @@ def train_model(df):
     print("\nCross-validation R2 scores:", cv_scores)
     print("Mean CV R2:", cv_scores.mean())
 
-    # 🔥 NEW: Best model selected automatically
-    rf_model = grid.best_estimator_
+    # 🔹 Gradient Boosting Model
+    gb_model = GradientBoostingRegressor(
+        n_estimators=150,   # slightly reduced
+        learning_rate=0.1,
+        max_depth=3,
+        random_state=42
+    )
 
-    # 🔥 Save both models
+    gb_model.fit(X_train, y_train)
+
+    # 🔥 Save models
     joblib.dump(ridge_pipeline, "models/ridge_model.pkl")
     joblib.dump(rf_model, "models/rf_model.pkl")
+    joblib.dump(gb_model, "models/gb_model.pkl")
 
-    return ridge_pipeline, rf_model, X_test, y_test
+    return ridge_pipeline, rf_model, gb_model, X_test, y_test
