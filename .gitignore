@@ -1,8 +1,8 @@
 # Virtual environment
 venv/
 
-# Model files (large)
-models/
+models/*
+!models/gb_model.pkl
 
 # Python cache
 __pycache__/
