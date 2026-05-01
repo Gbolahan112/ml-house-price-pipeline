@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import joblib
+import matplotlib.pyplot as plt
 
 # -------------------------------
 # Page Config
@@ -8,56 +9,67 @@ import joblib
 st.set_page_config(
     page_title="House Price Predictor",
     page_icon="🏠",
-    layout="centered"
+    layout="wide"
 )
 
 # -------------------------------
-# Load Model (cached)
+# Load Models
 # -------------------------------
 @st.cache_resource
-def load_model():
-    # 🔥 Load BEST model (Gradient Boosting)
-    return joblib.load("models/gb_model.pkl")
+def load_models():
+    return {
+        "Gradient Boosting (Best)": joblib.load("models/gb_model.pkl"),
+        "Random Forest": joblib.load("models/rf_model.pkl"),
+        "Ridge Regression": joblib.load("models/ridge_model.pkl")
+    }
 
-model = load_model()
+models = load_models()
+
+# -------------------------------
+# Sidebar
+# -------------------------------
+st.sidebar.header("⚙️ Settings")
+
+selected_model_name = st.sidebar.selectbox(
+    "Choose Model",
+    list(models.keys())
+)
+
+model = models[selected_model_name]
+
+st.sidebar.markdown("---")
+st.sidebar.write("Built with Streamlit 🚀")
 
 # -------------------------------
 # UI - Header
 # -------------------------------
 st.title("🏠 House Price Prediction App")
-st.markdown("### Predict house prices using Machine Learning")
-st.write("Fill in the details below and click **Predict Price**")
+st.markdown("### Compare models and predict house prices")
 
 st.markdown("---")
 
 # -------------------------------
-# Sidebar
+# Layout (Columns)
 # -------------------------------
-st.sidebar.header("About")
-st.sidebar.write(
-    "This app predicts house prices using a Gradient Boosting model. "
-    "Feature engineering is applied automatically during prediction."
-)
+col1, col2 = st.columns(2)
 
-# -------------------------------
-# Inputs
-# -------------------------------
-MedInc = st.number_input("Median Income", min_value=0.0, value=5.0)
-HouseAge = st.number_input("House Age", min_value=0, value=20)
-AveRooms = st.number_input("Average Rooms", min_value=0.1, value=5.0)
-AveBedrms = st.number_input("Average Bedrooms", min_value=0.1, value=1.0)
-Population = st.number_input("Population", min_value=1, value=300)
-AveOccup = st.number_input("Average Occupancy", min_value=0.1, value=3.0)
-Latitude = st.number_input("Latitude", value=34.0)
-Longitude = st.number_input("Longitude", value=-118.0)
+with col1:
+    st.subheader("📥 Input Features")
 
-# -------------------------------
-# Prediction
-# -------------------------------
-if st.button("Predict Price"):
+    MedInc = st.number_input("Median Income", min_value=0.0, value=5.0)
+    HouseAge = st.number_input("House Age", min_value=0, value=20)
+    AveRooms = st.number_input("Average Rooms", min_value=0.1, value=5.0)
+    AveBedrms = st.number_input("Average Bedrooms", min_value=0.1, value=1.0)
+    Population = st.number_input("Population", min_value=1, value=300)
+    AveOccup = st.number_input("Average Occupancy", min_value=0.1, value=3.0)
+    Latitude = st.number_input("Latitude", value=34.0)
+    Longitude = st.number_input("Longitude", value=-118.0)
 
-    try:
-        # Create DataFrame
+with col2:
+    st.subheader("📊 Prediction Output")
+
+    if st.button("Predict Price"):
+
         data = pd.DataFrame([{
             "MedInc": MedInc,
             "HouseAge": HouseAge,
@@ -69,12 +81,11 @@ if st.button("Predict Price"):
             "Longitude": Longitude
         }])
 
-        # 🔥 Feature Engineering
+        # Feature engineering
         data["Rooms_per_Household"] = data["AveRooms"] / data["AveOccup"]
         data["Bedrooms_per_Household"] = data["AveBedrms"] / data["AveOccup"]
         data["Income_per_Person"] = data["MedInc"] / data["Population"]
 
-        # Ensure correct column order
         data = data[
             [
                 "MedInc", "HouseAge", "AveRooms", "AveBedrms",
@@ -84,19 +95,37 @@ if st.button("Predict Price"):
             ]
         ]
 
-        # Predict
         prediction = model.predict(data)
-
-        # Format output (clean currency)
         price = prediction[0] * 100000
 
-        st.success(f"💰 Estimated House Price: ${price:,.0f}")
+        st.success(f"💰 Estimated Price: ${price:,.0f}")
+        st.write(f"Model used: **{selected_model_name}**")
 
-    except Exception as e:
-        st.error(f"Error during prediction: {str(e)}")
+# -------------------------------
+# Feature Importance (RF only)
+# -------------------------------
+if selected_model_name == "Random Forest":
+
+    st.markdown("---")
+    st.subheader("📈 Feature Importance (Random Forest)")
+
+    feature_names = [
+        "MedInc", "HouseAge", "AveRooms", "AveBedrms",
+        "Population", "AveOccup", "Latitude", "Longitude",
+        "Rooms_per_Household", "Bedrooms_per_Household",
+        "Income_per_Person"
+    ]
+
+    importances = model.feature_importances_
+
+    fig, ax = plt.subplots()
+    ax.barh(feature_names, importances)
+    ax.set_title("Feature Importance")
+
+    st.pyplot(fig)
 
 # -------------------------------
 # Footer
 # -------------------------------
 st.markdown("---")
-st.caption("Built with Streamlit | ML Pipeline Project by You 🚀")
+st.caption("Built by Gbolahan | ML Pipeline Project 🚀")
