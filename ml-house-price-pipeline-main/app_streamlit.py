@@ -15,6 +15,7 @@ st.set_page_config(
 # -------------------------------
 # Load Model (ONLY BEST MODEL)
 # ------------------
+
 @st.cache_resource
 def load_model():
     model_path = os.path.join(
