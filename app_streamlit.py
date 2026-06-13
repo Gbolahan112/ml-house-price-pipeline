@@ -7,7 +7,7 @@ import os
 # Page Config
 # -------------------------------
 st.set_page_config(
-    page_title="House Price Predictor",
+    page_title="California House Price Prediction",
     page_icon="🏠",
     layout="wide"
 )
@@ -30,23 +30,50 @@ model = load_model()
 # Sidebar
 # -------------------------------
 st.sidebar.header("ℹ️ About")
+
 st.sidebar.write(
-    "This app predicts house prices using a trained Gradient Boosting model."
+    """
+    This Machine Learning application predicts 
+    California housing prices using demographic, 
+    geographic, and housing-related features.
+
+    The model was trained on the California 
+    Housing Dataset and optimized using 
+    Gradient Boosting Regression to improve 
+    prediction performance.
+    """
+)
+
+st.sidebar.markdown("---")
+
+st.sidebar.info(
+    "Predictions are estimates based on historical "
+    "California housing data and should not be "
+    "considered financial advice."
 )
 
 # -------------------------------
-# UI - Header
+# App Header
 # -------------------------------
-st.title("🏠 House Price Prediction App")
-st.markdown("### Predict house prices using Machine Learning")
+st.title("🏠 California House Price Prediction System")
+
+st.markdown(
+    """
+    ### Predict California housing prices using 
+    Machine Learning and demographic indicators
+    """
+)
 
 st.markdown("---")
 
 # -------------------------------
-# Layout (Columns)
+# Layout
 # -------------------------------
 col1, col2 = st.columns(2)
 
+# -------------------------------
+# Input Features
+# -------------------------------
 with col1:
     st.subheader("📥 Input Features")
 
@@ -96,12 +123,16 @@ with col1:
         value=-118.0
     )
 
+# -------------------------------
+# Prediction Output
+# -------------------------------
 with col2:
     st.subheader("📊 Prediction Output")
 
     if st.button("Predict Price"):
 
         try:
+            # Create Input DataFrame
             data = pd.DataFrame([{
                 "MedInc": MedInc,
                 "HouseAge": HouseAge,
@@ -113,7 +144,9 @@ with col2:
                 "Longitude": Longitude
             }])
 
+            # -------------------------------
             # Feature Engineering
+            # -------------------------------
             data["Rooms_per_Household"] = (
                 data["AveRooms"] /
                 data["AveOccup"]
@@ -146,7 +179,9 @@ with col2:
                 ]
             ]
 
+            # -------------------------------
             # Prediction
+            # -------------------------------
             prediction = model.predict(data)
             price = prediction[0] * 100000
 
@@ -155,7 +190,7 @@ with col2:
             )
 
             st.write(
-                "Model used: Gradient Boosting"
+                "✅ Model Used: Gradient Boosting Regression"
             )
 
         except Exception as e:
@@ -167,6 +202,8 @@ with col2:
 # Footer
 # -------------------------------
 st.markdown("---")
+
 st.caption(
-    "Built by Gbolahan | ML Pipeline Project 🚀"
+    "Built by Abubakr Agbolahan | "
+    "Machine Learning Engineer 🚀"
 )
